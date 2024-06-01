@@ -1,0 +1,49 @@
+﻿@page "/counter"
+@page "/counter/{Name}"
+@inject ProtectedSessionStorage ProtectedSessionStore
+@using System.Web
+@rendermode InteractiveServer
+
+<PageTitle>Counter</PageTitle>
+
+@if (!String.IsNullOrEmpty(Name))
+{
+    <h3>Counter page name</h3>
+    <p>@HttpUtility.UrlDecode(Name)</p>
+}
+
+
+<Counter @ref="MyCounterComponent" OnCounterChanged="CounterValueChanged" />
+
+@code {
+    // component reference
+    public Counter MyCounterComponent;
+
+    private int counter;
+
+    [Parameter]
+    public string Name { get; set; } = string.Empty;
+
+    // event handler triggered when counter value changes
+    private async Task CounterValueChanged(int value)
+    {
+        counter = value;
+        // pretend we're an async method getting data from some async source
+        await ProtectedSessionStore.SetAsync("count", value);
+        // call StateHasChanged if the process mutates the state of this component
+        StateHasChanged();
+    }
+
+    // reload the counter value if this is a first render
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var result = await ProtectedSessionStore.GetAsync<int>("count");
+
+            MyCounterComponent.CurrentCount = result.Success ? result.Value : 0;
+            StateHasChanged();
+        }
+
+    }
+}
